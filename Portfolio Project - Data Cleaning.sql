@@ -1,188 +1,222 @@
--- My SQL Data Cleaning Project
--- Looking at layoff data from 2022
+/*
 
-SELECT * 
-FROM world_layoffs.layoffs;
+Cleaning Data in SQL Queries
 
--- Making a copy of the data to work with
-CREATE TABLE world_layoffs.layoffs_staging 
-LIKE world_layoffs.layoffs;
+*/
 
-INSERT layoffs_staging 
-SELECT * FROM world_layoffs.layoffs;
 
--- Steps we'll take:
--- 1. Find and remove duplicates
--- 2. Clean up the data
--- 3. Check for nulls
--- 4. Remove stuff we don't need
+Select *
+From PortfolioProject.dbo.NashvilleHousing
 
--- 1. Finding duplicates
+--------------------------------------------------------------------------------------------------------------------------
 
-SELECT *
-FROM world_layoffs.layoffs_staging;
+-- Standardize Date Format
 
--- Looking for duplicates in main fields
-SELECT company, industry, total_laid_off,`date`,
-		ROW_NUMBER() OVER (
-			PARTITION BY company, industry, total_laid_off,`date`) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging;
 
--- Checking for exact duplicates
-SELECT *
-FROM (
-	SELECT company, industry, total_laid_off,`date`,
-		ROW_NUMBER() OVER (
-			PARTITION BY company, industry, total_laid_off,`date`
-			) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging
-) duplicates
-WHERE 
-	row_num > 1;
-    
--- Double checking a specific company
-SELECT *
-FROM world_layoffs.layoffs_staging
-WHERE company = 'Oda'
-;
+Select saleDateConverted, CONVERT(Date,SaleDate)
+From PortfolioProject.dbo.NashvilleHousing
 
--- Looking at all possible duplicates
-SELECT *
-FROM (
-	SELECT company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions,
-		ROW_NUMBER() OVER (
-			PARTITION BY company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions
-			) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging
-) duplicates
-WHERE 
-	row_num > 1;
 
--- Making a new table to handle duplicates
-CREATE TABLE `world_layoffs`.`layoffs_staging2` (
-`company` text,
-`location`text,
-`industry`text,
-`total_laid_off` INT,
-`percentage_laid_off` text,
-`date` text,
-`stage`text,
-`country` text,
-`funds_raised_millions` int,
-row_num INT
-);
+Update NashvilleHousing
+SET SaleDate = CONVERT(Date,SaleDate)
 
--- Adding row numbers to find duplicates
-INSERT INTO `world_layoffs`.`layoffs_staging2`
-(`company`,
-`location`,
-`industry`,
-`total_laid_off`,
-`percentage_laid_off`,
-`date`,
-`stage`,
-`country`,
-`funds_raised_millions`,
-`row_num`)
-SELECT `company`,
-`location`,
-`industry`,
-`total_laid_off`,
-`percentage_laid_off`,
-`date`,
-`stage`,
-`country`,
-`funds_raised_millions`,
-		ROW_NUMBER() OVER (
-			PARTITION BY company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions
-			) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging;
+-- If it doesn't Update properly
 
--- Getting rid of duplicates
-DELETE FROM world_layoffs.layoffs_staging2
-WHERE row_num >= 2;
+ALTER TABLE NashvilleHousing
+Add SaleDateConverted Date;
 
--- 2. Cleaning up the data
+Update NashvilleHousing
+SET SaleDateConverted = CONVERT(Date,SaleDate)
 
-SELECT * 
-FROM world_layoffs.layoffs_staging2;
 
--- Checking what industries we have
-SELECT DISTINCT industry
-FROM world_layoffs.layoffs_staging2
-ORDER BY industry;
+ --------------------------------------------------------------------------------------------------------------------------
 
--- Finding empty industry fields
-SELECT *
-FROM world_layoffs.layoffs_staging2
-WHERE industry IS NULL 
-OR industry = ''
-ORDER BY industry;
+-- Populate Property Address data
 
--- Making empty fields NULL
-UPDATE world_layoffs.layoffs_staging2
-SET industry = NULL
-WHERE industry = '';
+Select *
+From PortfolioProject.dbo.NashvilleHousing
+--Where PropertyAddress is null
+order by ParcelID
 
--- Filling in missing industry data
-UPDATE layoffs_staging2 t1
-JOIN layoffs_staging2 t2
-ON t1.company = t2.company
-SET t1.industry = t2.industry
-WHERE t1.industry IS NULL
-AND t2.industry IS NOT NULL;
 
--- Making all crypto entries the same
-UPDATE layoffs_staging2
-SET industry = 'Crypto'
-WHERE industry IN ('Crypto Currency', 'CryptoCurrency');
 
--- Fixing country names
-UPDATE layoffs_staging2
-SET country = TRIM(TRAILING '.' FROM country);
+Select a.ParcelID, a.PropertyAddress, b.ParcelID, b.PropertyAddress, ISNULL(a.PropertyAddress,b.PropertyAddress)
+From PortfolioProject.dbo.NashvilleHousing a
+JOIN PortfolioProject.dbo.NashvilleHousing b
+	on a.ParcelID = b.ParcelID
+	AND a.[UniqueID ] <> b.[UniqueID ]
+Where a.PropertyAddress is null
 
--- Fixing date format
-UPDATE layoffs_staging2
-SET `date` = STR_TO_DATE(`date`, '%m/%d/%Y');
 
-ALTER TABLE layoffs_staging2
-MODIFY COLUMN `date` DATE;
+Update a
+SET PropertyAddress = ISNULL(a.PropertyAddress,b.PropertyAddress)
+From PortfolioProject.dbo.NashvilleHousing a
+JOIN PortfolioProject.dbo.NashvilleHousing b
+	on a.ParcelID = b.ParcelID
+	AND a.[UniqueID ] <> b.[UniqueID ]
+Where a.PropertyAddress is null
 
--- 3. Checking nulls
 
--- Looking at missing layoff numbers
-SELECT *
-FROM world_layoffs.layoffs_staging2
-WHERE total_laid_off IS NULL;
 
--- Finding rows with missing data
-SELECT *
-FROM world_layoffs.layoffs_staging2
-WHERE total_laid_off IS NULL
-AND percentage_laid_off IS NULL;
 
--- Removing rows we can't use
-DELETE FROM world_layoffs.layoffs_staging2
-WHERE total_laid_off IS NULL
-AND percentage_laid_off IS NULL;
+--------------------------------------------------------------------------------------------------------------------------
 
--- Cleaning up: removing the row_num column
-ALTER TABLE layoffs_staging2
-DROP COLUMN row_num;
+-- Breaking out Address into Individual Columns (Address, City, State)
 
--- Final look at our cleaned data
-SELECT * 
-FROM world_layoffs.layoffs_staging2;
+
+Select PropertyAddress
+From PortfolioProject.dbo.NashvilleHousing
+--Where PropertyAddress is null
+--order by ParcelID
+
+SELECT
+SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 ) as Address
+, SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress)) as Address
+
+From PortfolioProject.dbo.NashvilleHousing
+
+
+ALTER TABLE NashvilleHousing
+Add PropertySplitAddress Nvarchar(255);
+
+Update NashvilleHousing
+SET PropertySplitAddress = SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 )
+
+
+ALTER TABLE NashvilleHousing
+Add PropertySplitCity Nvarchar(255);
+
+Update NashvilleHousing
+SET PropertySplitCity = SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress))
+
+
+
+
+Select *
+From PortfolioProject.dbo.NashvilleHousing
+
+
+
+
+
+Select OwnerAddress
+From PortfolioProject.dbo.NashvilleHousing
+
+
+Select
+PARSENAME(REPLACE(OwnerAddress, ',', '.') , 3)
+,PARSENAME(REPLACE(OwnerAddress, ',', '.') , 2)
+,PARSENAME(REPLACE(OwnerAddress, ',', '.') , 1)
+From PortfolioProject.dbo.NashvilleHousing
+
+
+
+ALTER TABLE NashvilleHousing
+Add OwnerSplitAddress Nvarchar(255);
+
+Update NashvilleHousing
+SET OwnerSplitAddress = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 3)
+
+
+ALTER TABLE NashvilleHousing
+Add OwnerSplitCity Nvarchar(255);
+
+Update NashvilleHousing
+SET OwnerSplitCity = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 2)
+
+
+
+ALTER TABLE NashvilleHousing
+Add OwnerSplitState Nvarchar(255);
+
+Update NashvilleHousing
+SET OwnerSplitState = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 1)
+
+
+
+Select *
+From PortfolioProject.dbo.NashvilleHousing
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------
+
+
+-- Change Y and N to Yes and No in "Sold as Vacant" field
+
+
+Select Distinct(SoldAsVacant), Count(SoldAsVacant)
+From PortfolioProject.dbo.NashvilleHousing
+Group by SoldAsVacant
+order by 2
+
+
+
+
+Select SoldAsVacant
+, CASE When SoldAsVacant = 'Y' THEN 'Yes'
+	   When SoldAsVacant = 'N' THEN 'No'
+	   ELSE SoldAsVacant
+	   END
+From PortfolioProject.dbo.NashvilleHousing
+
+
+Update NashvilleHousing
+SET SoldAsVacant = CASE When SoldAsVacant = 'Y' THEN 'Yes'
+	   When SoldAsVacant = 'N' THEN 'No'
+	   ELSE SoldAsVacant
+	   END
 
 
 
 
 
 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Remove Duplicates
+
+WITH RowNumCTE AS(
+Select *,
+	ROW_NUMBER() OVER (
+	PARTITION BY ParcelID,
+				 PropertyAddress,
+				 SalePrice,
+				 SaleDate,
+				 LegalReference
+				 ORDER BY
+					UniqueID
+					) row_num
+
+From PortfolioProject.dbo.NashvilleHousing
+--order by ParcelID
+)
+Select *
+From RowNumCTE
+Where row_num > 1
+Order by PropertyAddress
+
+
+
+Select *
+From PortfolioProject.dbo.NashvilleHousing
+
+
+
+
+---------------------------------------------------------------------------------------------------------
+
+-- Delete Unused Columns
+
+
+
+Select *
+From PortfolioProject.dbo.NashvilleHousing
+
+
+ALTER TABLE PortfolioProject.dbo.NashvilleHousing
+DROP COLUMN OwnerAddress, TaxDistrict, PropertyAddress, SaleDate
 
 
 
@@ -193,6 +227,60 @@ FROM world_layoffs.layoffs_staging2;
 
 
 
+
+
+
+
+
+-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+
+--- Importing Data using OPENROWSET and BULK INSERT	
+
+--  More advanced and looks cooler, but have to configure server appropriately to do correctly
+--  Wanted to provide this in case you wanted to try it
+
+
+--sp_configure 'show advanced options', 1;
+--RECONFIGURE;
+--GO
+--sp_configure 'Ad Hoc Distributed Queries', 1;
+--RECONFIGURE;
+--GO
+
+
+--USE PortfolioProject 
+
+--GO 
+
+--EXEC master.dbo.sp_MSset_oledb_prop N'Microsoft.ACE.OLEDB.12.0', N'AllowInProcess', 1 
+
+--GO 
+
+--EXEC master.dbo.sp_MSset_oledb_prop N'Microsoft.ACE.OLEDB.12.0', N'DynamicParameters', 1 
+
+--GO 
+
+
+---- Using BULK INSERT
+
+--USE PortfolioProject;
+--GO
+--BULK INSERT nashvilleHousing FROM 'C:\Temp\SQL Server Management Studio\Nashville Housing Data for Data Cleaning Project.csv'
+--   WITH (
+--      FIELDTERMINATOR = ',',
+--      ROWTERMINATOR = '\n'
+--);
+--GO
+
+
+---- Using OPENROWSET
+--USE PortfolioProject;
+--GO
+--SELECT * INTO nashvilleHousing
+--FROM OPENROWSET('Microsoft.ACE.OLEDB.12.0',
+--    'Excel 12.0; Database=C:\Users\alexf\OneDrive\Documents\SQL Server Management Studio\Nashville Housing Data for Data Cleaning Project.csv', [Sheet1$]);
+--GO
 
 
 

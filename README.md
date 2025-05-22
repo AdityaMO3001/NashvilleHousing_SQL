@@ -1,6 +1,6 @@
-# SQL Data Cleaning Project
+# SQL Data Cleaning Project - Nashville Housing
 
-A personal project where I clean and analyze layoff data from 2022 using SQL. This project demonstrates my data cleaning skills and SQL proficiency.
+A personal project where I clean and analyze Nashville Housing data using SQL. This project demonstrates my data cleaning skills and SQL proficiency.
 
 ## What's in this project?
 
@@ -10,58 +10,81 @@ A personal project where I clean and analyze layoff data from 2022 using SQL. Th
 
 ## What I did
 
-1. **Duplicate Handling**
-   - Found and removed duplicate entries
-   - Used row numbers to identify exact duplicates
-   - Created a staging table to preserve original data
+1. **Date Standardization**
+   - Converted sale dates to proper date format
+   - Created a new column for standardized dates
 
-2. **Data Standardization**
-   - Fixed inconsistent industry names (especially in crypto)
-   - Standardized country names
-   - Converted dates to proper format
-   - Handled NULL values and empty fields
+2. **Address Data Cleaning**
+   - Populated missing property addresses
+   - Split addresses into individual columns (Address, City, State)
+   - Standardized address formats
 
-3. **Data Quality**
-   - Removed rows with missing critical data
-   - Cleaned up formatting issues
-   - Made sure all data types were correct
+3. **Data Standardization**
+   - Changed Y/N to Yes/No in "Sold as Vacant" field
+   - Removed duplicates
+   - Deleted unused columns
 
 ## Skills Demonstrated
 
 - SQL data cleaning
-- Data standardization
+- Date formatting
+- String manipulation
 - Handling NULL values
-- Working with dates
 - Table manipulation
 - Data quality checks
+
+
+## My Analysis
+
+In this project, I performed several key analyses on the Nashville Housing data:
+
+1. **Property Address Analysis**
+   - Identified and filled missing property addresses using ParcelID
+   - Split addresses into separate columns for better analysis
+   - Created standardized address formats for consistency
+
+2. **Sales Data Analysis**
+   - Standardized sale dates for temporal analysis
+   - Analyzed sales patterns and trends
+   - Identified potential duplicate sales entries
+
+3. **Property Characteristics**
+   - Standardized the "Sold as Vacant" field (Y/N to Yes/No)
+   - Analyzed property distributions
+   - Identified patterns in property sales
+
+4. **Data Quality Improvements**
+   - Removed duplicate entries
+   - Cleaned up inconsistent data formats
+   - Removed unnecessary columns to streamline the dataset
+
+5. **Key Findings**
+   - Identified patterns in property sales
+   - Discovered relationships between property characteristics
+   - Created a clean, analysis-ready dataset
+
+This analysis provides valuable insights for real estate professionals, market analysts, and anyone interested in the Nashville housing market trends.
 
 ## Analysis and Use Cases
 
 This cleaned dataset can be used for various analyses:
 
-1. **Industry Impact Analysis**
-   - Track layoff trends across different industries
-   - Identify which sectors were most affected
-   - Compare layoff patterns between tech and non-tech companies
+1. **Property Analysis**
+   - Track property sales trends
+   - Analyze property values by location
+   - Study sales patterns over time
 
 2. **Geographic Analysis**
-   - Map layoff distributions by country and region
-   - Identify geographic hotspots of layoffs
-   - Compare regional impacts of economic changes
+   - Map property distributions by city and state
+   - Identify high-value neighborhoods
+   - Compare property values across different areas
 
-3. **Company Stage Analysis**
-   - Study how layoffs affect companies at different stages
-   - Compare layoff patterns between startups and established companies
-   - Analyze the relationship between funding and layoffs
+3. **Market Analysis**
+   - Study sales patterns
+   - Analyze property characteristics
+   - Track market trends
 
-4. **Temporal Analysis**
-   - Track layoff trends over time
-   - Identify seasonal patterns in layoffs
-   - Study the impact of specific events on layoff decisions
-
-5. **Business Intelligence**
-   - Create dashboards for layoff monitoring
-   - Generate reports for HR and management
-   - Track company health indicators
-
-
+4. **Business Intelligence**
+   - Create real estate dashboards
+   - Generate property reports
+   - Track market indicators
